@@ -110,9 +110,8 @@
 </div>
 
 <script>
-// Теперь DB пустая, она заполнится из файла tasks.json
 let DB = {};
-const STORAGE_KEY = "ege_trainer_v2"; // Обновили ключ, чтобы сбросить старые тесты
+const STORAGE_KEY = "ege_trainer_v3"; // Обновили ключ для сброса старого кэша
 const $ = s => document.querySelector(s);
 
 let state = { subject: 'math', results: {}, hideSolved: false };
@@ -131,23 +130,17 @@ function save() {
   }));
 }
 
-// Загрузка заданий из JSON
 async function loadTasks() {
   try {
     const response = await fetch('tasks.json');
     if (!response.ok) throw new Error('Сеть ответила с ошибкой');
     DB = await response.json();
-    
-    // Если сохраненного предмета нет в новом списке, берем первый
-    if (!DB[state.subject]) {
-      state.subject = Object.keys(DB)[0];
-    }
-    
+    if (!DB[state.subject]) state.subject = Object.keys(DB)[0];
     renderSubjects();
     renderTasks();
   } catch (error) {
     console.error("Ошибка загрузки:", error);
-    document.getElementById('tasks').innerHTML = '<p style="color:red">Ошибка загрузки заданий. Убедитесь, что файл tasks.json находится в той же папке.</p>';
+    document.getElementById('tasks').innerHTML = '<p style="color:red">Ошибка загрузки заданий. Убедитесь, что файл tasks.json находится в той же папке и не содержит ошибок.</p>';
     document.getElementById('subjectTitle').textContent = "Ошибка";
   }
 }
@@ -199,6 +192,9 @@ function renderTasks() {
     const res = state.results[key] || {};
     if (state.hideSolved && res.solved) return;
 
+    // ФОРМИРУЕМ ЗАГОЛОВОК ЗАДАНИЯ (используем task.id, если есть)
+    const taskLabel = task.id ? `Задание ${task.id} ЕГЭ` : `Задание ${i + 1}`;
+
     const card = document.createElement("article");
     card.className = "task" + (res.solved ? " solved" : "");
 
@@ -227,7 +223,7 @@ function renderTasks() {
 
     card.innerHTML = `
       <div class="task-head">
-        <span class="task-num">Задание ${i + 1}</span>
+        <span class="task-num">${taskLabel}</span>
         ${res.solved ? '<span class="badge">решено</span>' : ""}
       </div>
       <div class="task-text">${esc(task.text)}</div>
@@ -382,7 +378,6 @@ $("#timerReset").addEventListener("click", () => {
   $("#timerToggle").textContent = "Старт";
 });
 
-// Запуск!
 loadTasks();
 </script>
 </body>
