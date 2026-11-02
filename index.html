@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тренажёр ЕГЭ</title>
+<style>
+  *{box-sizing:border-box}
+  :root{
+    --bg:#f4f5f9; --card:#fff; --text:#1e2330; --muted:#6b7280;
+    --accent:#4f46e5; --accent-soft:#eef0ff;
+    --green:#15803d; --green-soft:#e8f7ee;
+    --red:#dc2626; --red-soft:#fdeaea;
+    --border:#e3e5ec; --radius:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#111318; --card:#1a1d25; --text:#e7e9ef; --muted:#98a0ae;
+      --accent:#8b8cf7; --accent-soft:#22243a;
+      --green:#4ade80; --green-soft:#15301f;
+      --red:#f87171; --red-soft:#331b1b;
+      --border:#2a2f3b;
+    }
+  }
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .app{max-width:900px;margin:0 auto;padding:20px 16px 80px}
+
+  /* шапка */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .topbar h1{font-size:22px;margin:0;letter-spacing:-.02em}
+  .timer{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);
+    padding:5px 6px 5px 12px;border-radius:999px}
+  .timer span{font-variant-numeric:tabular-nums;font-weight:700;min-width:52px;text-align:center}
+
+  /* кнопки */
+  button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);
+    color:var(--text);padding:8px 14px;border-radius:10px;transition:.15s ease}
+  button:hover{border-color:var(--accent)}
+  button:active{transform:translateY(1px)}
+  .primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .primary:hover{filter:brightness(1.08)}
+  .ghost{background:transparent}
+  .small{padding:4px 10px;font-size:13px;border-radius:8px}
+
+  /* предметы */
+  .subjects{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px}
+  .subject-btn{white-space:nowrap;padding:8px 16px;border-radius:999px;font-weight:500}
+  .subject-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* панель */
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .panel-head h2{margin:0;font-size:19px}
+  .toggle{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);cursor:pointer;user-select:none}
+  .progress-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .progress{flex:1;height:8px;background:var(--border);border-radius:999px;overflow:hidden}
+  .progress-bar{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .3s ease}
+  .progress-text{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* задание */
+  .task{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;margin-bottom:14px;transition:border-color .2s}
+  .task.solved{border-color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+  .task-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .task-num{font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .badge{font-size:12px;font-weight:600;color:var(--green);background:var(--green-soft);padding:2px 8px;border-radius:999px}
+  .task-text{margin:0 0 12px;white-space:pre-wrap}
+  .answer-input{width:100%;max-width:340px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;
+    background:var(--bg);color:var(--text);font:inherit;outline:none}
+  .answer-input:focus{border-color:var(--accent)}
+  .options{display:flex;flex-direction:column;gap:6px}
+  .option{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);
+    border-radius:10px;cursor:pointer;transition:.15s}
+  .option:hover{border-color:var(--accent)}
+  .option input{accent-color:var(--accent)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .feedback{margin-top:10px;padding:9px 12px;border-radius:10px;font-size:14px;display:none}
+  .feedback.ok{display:block;background:var(--green-soft);color:var(--green);font-weight:500}
+  .feedback.err{display:block;background:var(--red-soft);color:var(--red);font-weight:500}
+  .feedback.warn{display:block;background:var(--accent-soft);color:var(--accent);font-weight:500}
+  .solution{display:none;margin-top:10px;padding:10px 12px;background:var(--accent-soft);
+    border-radius:10px;white-space:pre-wrap;font-size:15px}
+  .solution.show{display:block}
+  .selfcheck{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Тренажёр ЕГЭ</h1>
+    <div class="timer">
+      <span id="timerDisplay">00:00</span>
+      <button id="timerToggle" class="small">Старт</button>
+      <button id="timerReset" class="small" title="Сброс таймера">⟲</button>
+    </div>
+  </header>
+
+  <nav class="subjects" id="subjects"></nav>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 id="subjectTitle"></h2>
+      <label class="toggle"><input type="checkbox" id="hideSolved"> скрыть решённые</label>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+      <span class="progress-text" id="progressText"></span>
+      <button id="resetProgress" class="ghost small">сбросить</button>
+    </div>
+
+    <div id="tasks"></div>
+  </section>
+</div>
+
+<script>
+const DB = {
+  math: {
+    title: "Математика",
+    tasks: [
+      { type: "short", text: "Найдите корень уравнения 2^(x+3) = 32.",
+        answer: "2", solution: "32 = 2^5, значит x + 3 = 5, x = 2." },
+      { type: "choice", text: "Какое из чисел наибольшее?",
+        options: ["3/7", "5/9", "0,42", "0,45"], correct: 1,
+        solution: "3/7 ≈ 0,4286; 5/9 ≈ 0,5556; 0,42; 0,45. Наибольшее — 5/9." },
+      { type: "short", text: "Решите уравнение x² − 5x + 6 = 0. Если корней несколько, укажите их сумму.",
+        answer: "5", solution: "Корни: x₁ = 2, x₂ = 3. Сумма = 5 (теорема Виета)." },
+      { type: "detailed", text: "Решите неравенство (x − 1)(x + 3) > 0.",
+        solution: "Корни: x = 1 и x = −3. Парабола ветвями вверх, знак «> 0» вне корней:\nx ∈ (−∞; −3) ∪ (1; +∞)." }
+    ]
+  },
+  rus: {
+    title: "Русский язык",
+    tasks: [
+      { type: "choice", text: "В каком слове пишется НН?",
+        options: ["серебряный", "стеклянный", "ветреный", "юный"], correct: 1,
+        solution: "«Стеклянный» — слово-исключение, пишется с НН (как оловянный, деревянный)." },
+      { type: "short", text: "Выпишите грамматическую основу предложения: «Наступает тихая осень.»",
+        answer: ["наступает осень", "осень наступает"],
+        solution: "Подлежащее — «осень», сказуемое — «наступает»." },
+      { type: "detailed", text: "Объясните постановку тире в предложении «Москва — столица России».",
+        solution: "Тире ставится между подлежащим и сказуемым, если оба выражены существительными в именительном падеже и связка отсутствует." }
+    ]
+  },
+  inf: {
+    title: "Информатика",
+    tasks: [
+      { type: "short", text: "Сколько единиц в двоичной записи числа 78?",
+        answer: "4", solution: "78 = 1001110₂ → четыре единицы." },
+      { type: "choice", text: "Какое десятичное число соответствует двоичному 10101₂?",
+        options: ["17", "21", "23", "25"], correct: 1,
+        solution: "10101₂ = 16 + 4 + 1 = 21." },
+      { type: "short", text: "Файл объёмом 3 Мбайт передаётся со скоростью 2²⁰ бит/с. Сколько секунд это займёт?",
+        answer: "24",
+        solution: "3 Мбайт = 3 · 2²⁰ байт = 24 · 2²⁰ бит. Делим на 2²⁰ бит/с → 24 с." }
+    ]
+  },
+  phys: {
+    title: "Физика",
+    tasks: [
+      { type: "short", text: "Тело движется равномерно со скоростью 5 м/с. Какой путь оно пройдёт за 12 с? Ответ в метрах.",
+        answer: "60", solution: "s = v · t = 5 · 12 = 60 м." },
+      { type: "choice", text: "Единица измерения работы в СИ —",
+        options: ["Ньютон", "Джоуль", "Ватт", "Паскаль"], correct: 1,
+        solution: "Работа измеряется в джоулях (Дж)." },
+      { type: "short", text: "Чему равна сила тяжести, действующая на тело массой 2 кг? (g = 10 м/с²)",
+        answer: ["20", "20 н", "20н"], solution: "F = m · g = 2 · 10 = 20 Н." }
+    ]
+  },
+  hist: {
+    title: "История",
+    tasks: [
+      { type: "choice", text: "В каком году произошло Крещение Руси?",
+        options: ["862", "988", "1147", "1237"], correct: 1,
+        solution: "Крещение Руси — 988 год, при князе Владимире Святославиче." },
+      { type: "short", text: "Укажите год начала Великой Отечественной войны.",
+        answer: "1941", solution: "22 июня 1941 года." },
+      { type: "choice", text: "Кто был первым русским царём?",
+        options: ["Иван III", "Иван IV Грозный", "Пётр I", "Борис Годунов"], correct: 1,
+        solution: "Иван IV Грозный принял царский титул в 1547 году." }
+    ]
+  }
+};
+
+const STORAGE_KEY = "ege_trainer_v1";
+const $ = s => document.querySelector(s);
+
+let state = { subject: Object.keys(DB)[0], results: {}, hideSolved: false };
+
+try {
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  if (saved) {
+    state.results = saved.results || {};
+    if (saved.subject && DB[saved.subject]) state.subject = saved.subject;
+  }
+} catch (e) { /* ignore */ }
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    subject: state.subject, results: state.results
+  }));
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+function normalize(v) {
+  return String(v).trim().toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/,/g, ".")
+    .replace(/\s+/g, " ");
+}
+function matches(user, correct) {
+  const list = Array.isArray(correct) ? correct : [correct];
+  const u = normalize(user);
+  return list.some(c => normalize(c) === u);
+}
+
+function renderSubjects() {
+  const nav = $("#subjects");
+  nav.innerHTML = "";
+  Object.entries(DB).forEach(([id, subj]) => {
+    const btn = document.createElement("button");
+    btn.className = "subject-btn" + (id === state.subject ? " active" : "");
+    btn.textContent = subj.title;
+    btn.onclick = () => {
+      state.subject = id;
+      save();
+      renderSubjects();
+      renderTasks();
+    };
+    nav.appendChild(btn);
+  });
+}
+
+function renderTasks() {
+  const subj = DB[state.subject];
+  $("#subjectTitle").textContent = subj.title;
+  const wrap = $("#tasks");
+  wrap.innerHTML = "";
+
+  subj.tasks.forEach((task, i) => {
+    const key = state.subject + "::" + i;
+    const res = state.results[key] || {};
+    if (state.hideSolved && res.solved) return;
+
+    const card = document.createElement("article");
+    card.className = "task" + (res.solved ? " solved" : "");
+
+    let body = "";
+    if (task.type === "short") {
+      body = `<input class="answer-input" type="text" data-key="${key}"
+                placeholder="Ваш ответ" autocomplete="off"
+                value="${esc(res.userAnswer ?? "")}">`;
+    } else if (task.type === "choice") {
+      body = '<div class="options">' + task.options.map((opt, oi) =>
+        `<label class="option">
+           <input type="radio" name="${key}" value="${oi}"
+             ${String(res.userAnswer) === String(oi) ? "checked" : ""}>
+           <span>${esc(opt)}</span>
+         </label>`).join("") + "</div>";
+    } else {
+      body = `<div class="selfcheck">
+        <button data-self="1" data-key="${key}">✓ Решил сам</button>
+        <button data-self="0" data-key="${key}">✗ Не решил</button>
+      </div>`;
+    }
+
+    const checkBtn = task.type === "detailed"
+      ? ""
+      : `<button class="primary" data-check="${key}">Проверить</button>`;
+
+    card.innerHTML = `
+      <div class="task-head">
+        <span class="task-num">Задание ${i + 1}</span>
+        ${res.solved ? '<span class="badge">решено</span>' : ""}
+      </div>
+      <div class="task-text">${esc(task.text)}</div>
+      ${body}
+      <div class="actions">
+        ${checkBtn}
+        ${task.solution ? `<button class="ghost" data-solution="${key}">Показать решение</button>` : ""}
+      </div>
+      <div class="feedback" id="fb-${key}"></div>
+      ${task.solution ? `<div class="solution" id="sol-${key}">${esc(task.solution)}</div>` : ""}
+    `;
+    wrap.appendChild(card);
+  });
+
+  updateProgress();
+}
+
+function updateProgress() {
+  const tasks = DB[state.subject].tasks;
+  const solved = tasks.reduce((n, _, i) =>
+    n + (state.results[state.subject + "::" + i]?.solved ? 1 : 0), 0);
+  const pct = tasks.length ? Math.round(solved / tasks.length * 100) : 0;
+  $("#progressBar").style.width = pct + "%";
+  $("#progressText").textContent = `${solved} из ${tasks.length} (${pct}%)`;
+}
+
+function feedback(key, msg, type) {
+  const el = document.getElementById("fb-" + key);
+  if (!el) return;
+  el.className = "feedback " + type;
+  el.textContent = msg;
+}
+
+function markSolved(key, ok) {
+  const card = document.querySelector(`[data-check="${key}"], [data-self][data-key="${key}"]`)
+    ?.closest(".task");
+  if (!card) return;
+  card.classList.toggle("solved", ok);
+  let badge = card.querySelector(".badge");
+  if (ok && !badge) {
+    badge = document.createElement("span");
+    badge.className = "badge";
+    badge.textContent = "решено";
+    card.querySelector(".task-head").appendChild(badge);
+  }
+  if (!ok && badge) badge.remove();
+}
+
+function checkAnswer(key) {
+  const [subjId, idxStr] = key.split("::");
+  const task = DB[subjId].tasks[Number(idxStr)];
+  const prev = state.results[key] || {};
+  let ok = false, userAns = "";
+
+  if (task.type === "choice") {
+    const sel = document.querySelector(`input[name="${key}"]:checked`);
+    if (!sel) return feedback(key, "Сначала выберите вариант ответа.", "warn");
+    userAns = sel.value;
+    ok = Number(sel.value) === task.correct;
+  } else {
+    const inp = document.querySelector(`.answer-input[data-key="${key}"]`);
+    userAns = inp.value;
+    if (!userAns.trim()) return feedback(key, "Введите ответ.", "warn");
+    ok = matches(userAns, task.answer);
+  }
+
+  state.results[key] = {
+    ...prev,
+    solved: ok || !!prev.solved,
+    userAnswer: userAns,
+    lastCorrect: ok
+  };
+  save();
+  markSolved(key, true === ok ? true : !!state.results[key].solved);
+  feedback(key,
+    ok ? "✅ Верно!" : "❌ Неверно. Попробуйте ещё раз или посмотрите решение.",
+    ok ? "ok" : "err");
+  updateProgress();
+}
+
+function toggleSolution(key) {
+  const el = document.getElementById("sol-" + key);
+  if (!el) return;
+  el.classList.toggle("show");
+  const btn = document.querySelector(`[data-solution="${key}"]`);
+  if (btn) btn.textContent = el.classList.contains("show")
+    ? "Скрыть решение" : "Показать решение";
+}
+
+function selfCheck(key, val) {
+  const ok = val === "1";
+  state.results[key] = { ...(state.results[key] || {}), solved: ok, selfRated: true };
+  save();
+  markSolved(key, ok);
+  feedback(key,
+    ok ? "✅ Отлично, задание отмечено решённым."
+       : "Ок, вернитесь к нему позже. Решение — ниже.",
+    ok ? "ok" : "warn");
+  updateProgress();
+}
+
+$("#tasks").addEventListener("click", e => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.dataset.check) checkAnswer(t.dataset.check);
+  if (t.dataset.solution) toggleSolution(t.dataset.solution);
+  if (t.dataset.self !== undefined) selfCheck(t.dataset.key, t.dataset.self);
+});
+$("#tasks").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.classList.contains("answer-input")) {
+    e.preventDefault();
+    checkAnswer(e.target.dataset.key);
+  }
+});
+
+$("#hideSolved").addEventListener("change", e => {
+  state.hideSolved = e.target.checked;
+  renderTasks();
+});
+
+$("#resetProgress").addEventListener("click", () => {
+  if (!confirm('Сбросить прогресс по предмету «' + DB[state.subject].title + '»?')) return;
+  Object.keys(state.results).forEach(k => {
+    if (k.startsWith(state.subject + "::")) delete state.results[k];
+  });
+  save();
+  renderTasks();
+});
+
+let timer = { sec: 0, id: null };
+const fmt = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" +
+                 String(s % 60).padStart(2, "0");
+
+$("#timerToggle").addEventListener("click", () => {
+  if (timer.id) {
+    clearInterval(timer.id);
+    timer.id = null;
+    $("#timerToggle").textContent = "Старт";
+  } else {
+    timer.id = setInterval(() => {
+      timer.sec++;
+      $("#timerDisplay").textContent = fmt(timer.sec);
+    }, 1000);
+    $("#timerToggle").textContent = "Пауза";
+  }
+});
+$("#timerReset").addEventListener("click", () => {
+  clearInterval(timer.id);
+  timer.id = null; timer.sec = 0;
+  $("#timerDisplay").textContent = "00:00";
+  $("#timerToggle").textContent = "Старт";
+});
+
+renderSubjects();
+renderTasks();
+</script>
+</body>
+</html>
