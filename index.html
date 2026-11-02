@@ -27,14 +27,12 @@
     -webkit-font-smoothing:antialiased}
   .app{max-width:900px;margin:0 auto;padding:20px 16px 80px}
 
-  /* шапка */
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
   .topbar h1{font-size:22px;margin:0;letter-spacing:-.02em}
   .timer{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);
     padding:5px 6px 5px 12px;border-radius:999px}
   .timer span{font-variant-numeric:tabular-nums;font-weight:700;min-width:52px;text-align:center}
 
-  /* кнопки */
   button{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);
     color:var(--text);padding:8px 14px;border-radius:10px;transition:.15s ease}
   button:hover{border-color:var(--accent)}
@@ -44,12 +42,10 @@
   .ghost{background:transparent}
   .small{padding:4px 10px;font-size:13px;border-radius:8px}
 
-  /* предметы */
   .subjects{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px}
   .subject-btn{white-space:nowrap;padding:8px 16px;border-radius:999px;font-weight:500}
   .subject-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 
-  /* панель */
   .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
   .panel-head h2{margin:0;font-size:19px}
   .toggle{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);cursor:pointer;user-select:none}
@@ -58,7 +54,6 @@
   .progress-bar{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .3s ease}
   .progress-text{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 
-  /* задание */
   .task{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
     padding:16px 18px;margin-bottom:14px;transition:border-color .2s}
   .task.solved{border-color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
@@ -100,7 +95,7 @@
 
   <section class="panel">
     <div class="panel-head">
-      <h2 id="subjectTitle"></h2>
+      <h2 id="subjectTitle">Загрузка...</h2>
       <label class="toggle"><input type="checkbox" id="hideSolved"> скрыть решённые</label>
     </div>
 
@@ -115,84 +110,18 @@
 </div>
 
 <script>
-const DB = {
-  math: {
-    title: "Математика",
-    tasks: [
-      { type: "short", text: "Найдите корень уравнения 2^(x+3) = 32.",
-        answer: "2", solution: "32 = 2^5, значит x + 3 = 5, x = 2." },
-      { type: "choice", text: "Какое из чисел наибольшее?",
-        options: ["3/7", "5/9", "0,42", "0,45"], correct: 1,
-        solution: "3/7 ≈ 0,4286; 5/9 ≈ 0,5556; 0,42; 0,45. Наибольшее — 5/9." },
-      { type: "short", text: "Решите уравнение x² − 5x + 6 = 0. Если корней несколько, укажите их сумму.",
-        answer: "5", solution: "Корни: x₁ = 2, x₂ = 3. Сумма = 5 (теорема Виета)." },
-      { type: "detailed", text: "Решите неравенство (x − 1)(x + 3) > 0.",
-        solution: "Корни: x = 1 и x = −3. Парабола ветвями вверх, знак «> 0» вне корней:\nx ∈ (−∞; −3) ∪ (1; +∞)." }
-    ]
-  },
-  rus: {
-    title: "Русский язык",
-    tasks: [
-      { type: "choice", text: "В каком слове пишется НН?",
-        options: ["серебряный", "стеклянный", "ветреный", "юный"], correct: 1,
-        solution: "«Стеклянный» — слово-исключение, пишется с НН (как оловянный, деревянный)." },
-      { type: "short", text: "Выпишите грамматическую основу предложения: «Наступает тихая осень.»",
-        answer: ["наступает осень", "осень наступает"],
-        solution: "Подлежащее — «осень», сказуемое — «наступает»." },
-      { type: "detailed", text: "Объясните постановку тире в предложении «Москва — столица России».",
-        solution: "Тире ставится между подлежащим и сказуемым, если оба выражены существительными в именительном падеже и связка отсутствует." }
-    ]
-  },
-  inf: {
-    title: "Информатика",
-    tasks: [
-      { type: "short", text: "Сколько единиц в двоичной записи числа 78?",
-        answer: "4", solution: "78 = 1001110₂ → четыре единицы." },
-      { type: "choice", text: "Какое десятичное число соответствует двоичному 10101₂?",
-        options: ["17", "21", "23", "25"], correct: 1,
-        solution: "10101₂ = 16 + 4 + 1 = 21." },
-      { type: "short", text: "Файл объёмом 3 Мбайт передаётся со скоростью 2²⁰ бит/с. Сколько секунд это займёт?",
-        answer: "24",
-        solution: "3 Мбайт = 3 · 2²⁰ байт = 24 · 2²⁰ бит. Делим на 2²⁰ бит/с → 24 с." }
-    ]
-  },
-  phys: {
-    title: "Физика",
-    tasks: [
-      { type: "short", text: "Тело движется равномерно со скоростью 5 м/с. Какой путь оно пройдёт за 12 с? Ответ в метрах.",
-        answer: "60", solution: "s = v · t = 5 · 12 = 60 м." },
-      { type: "choice", text: "Единица измерения работы в СИ —",
-        options: ["Ньютон", "Джоуль", "Ватт", "Паскаль"], correct: 1,
-        solution: "Работа измеряется в джоулях (Дж)." },
-      { type: "short", text: "Чему равна сила тяжести, действующая на тело массой 2 кг? (g = 10 м/с²)",
-        answer: ["20", "20 н", "20н"], solution: "F = m · g = 2 · 10 = 20 Н." }
-    ]
-  },
-  hist: {
-    title: "История",
-    tasks: [
-      { type: "choice", text: "В каком году произошло Крещение Руси?",
-        options: ["862", "988", "1147", "1237"], correct: 1,
-        solution: "Крещение Руси — 988 год, при князе Владимире Святославиче." },
-      { type: "short", text: "Укажите год начала Великой Отечественной войны.",
-        answer: "1941", solution: "22 июня 1941 года." },
-      { type: "choice", text: "Кто был первым русским царём?",
-        options: ["Иван III", "Иван IV Грозный", "Пётр I", "Борис Годунов"], correct: 1,
-        solution: "Иван IV Грозный принял царский титул в 1547 году." }
-    ]
-  }
-};
-
-const STORAGE_KEY = "ege_trainer_v1";
+// Теперь DB пустая, она заполнится из файла tasks.json
+let DB = {};
+const STORAGE_KEY = "ege_trainer_v2"; // Обновили ключ, чтобы сбросить старые тесты
 const $ = s => document.querySelector(s);
 
-let state = { subject: Object.keys(DB)[0], results: {}, hideSolved: false };
+let state = { subject: 'math', results: {}, hideSolved: false };
 
 try {
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
   if (saved) {
     state.results = saved.results || {};
-    if (saved.subject && DB[saved.subject]) state.subject = saved.subject;
+    if (saved.subject) state.subject = saved.subject;
   }
 } catch (e) { /* ignore */ }
 
@@ -200,6 +129,27 @@ function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     subject: state.subject, results: state.results
   }));
+}
+
+// Загрузка заданий из JSON
+async function loadTasks() {
+  try {
+    const response = await fetch('tasks.json');
+    if (!response.ok) throw new Error('Сеть ответила с ошибкой');
+    DB = await response.json();
+    
+    // Если сохраненного предмета нет в новом списке, берем первый
+    if (!DB[state.subject]) {
+      state.subject = Object.keys(DB)[0];
+    }
+    
+    renderSubjects();
+    renderTasks();
+  } catch (error) {
+    console.error("Ошибка загрузки:", error);
+    document.getElementById('tasks').innerHTML = '<p style="color:red">Ошибка загрузки заданий. Убедитесь, что файл tasks.json находится в той же папке.</p>';
+    document.getElementById('subjectTitle').textContent = "Ошибка";
+  }
 }
 
 function esc(s) {
@@ -238,6 +188,8 @@ function renderSubjects() {
 
 function renderTasks() {
   const subj = DB[state.subject];
+  if (!subj) return;
+  
   $("#subjectTitle").textContent = subj.title;
   const wrap = $("#tasks");
   wrap.innerHTML = "";
@@ -294,7 +246,7 @@ function renderTasks() {
 }
 
 function updateProgress() {
-  const tasks = DB[state.subject].tasks;
+  const tasks = DB[state.subject]?.tasks || [];
   const solved = tasks.reduce((n, _, i) =>
     n + (state.results[state.subject + "::" + i]?.solved ? 1 : 0), 0);
   const pct = tasks.length ? Math.round(solved / tasks.length * 100) : 0;
@@ -397,6 +349,7 @@ $("#hideSolved").addEventListener("change", e => {
 });
 
 $("#resetProgress").addEventListener("click", () => {
+  if (!DB[state.subject]) return;
   if (!confirm('Сбросить прогресс по предмету «' + DB[state.subject].title + '»?')) return;
   Object.keys(state.results).forEach(k => {
     if (k.startsWith(state.subject + "::")) delete state.results[k];
@@ -429,8 +382,8 @@ $("#timerReset").addEventListener("click", () => {
   $("#timerToggle").textContent = "Старт";
 });
 
-renderSubjects();
-renderTasks();
+// Запуск!
+loadTasks();
 </script>
 </body>
 </html>
