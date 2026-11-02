@@ -111,7 +111,7 @@
 
 <script>
 let DB = {};
-const STORAGE_KEY = "ege_trainer_v3"; // Обновили ключ для сброса старого кэша
+const STORAGE_KEY = "ege_trainer_v4"; // Обновили ключ, чтобы сбросить старые сохранения
 const $ = s => document.querySelector(s);
 
 let state = { subject: 'math', results: {}, hideSolved: false };
@@ -192,7 +192,6 @@ function renderTasks() {
     const res = state.results[key] || {};
     if (state.hideSolved && res.solved) return;
 
-    // ФОРМИРУЕМ ЗАГОЛОВОК ЗАДАНИЯ (используем task.id, если есть)
     const taskLabel = task.id ? `Задание ${task.id} ЕГЭ` : `Задание ${i + 1}`;
 
     const card = document.createElement("article");
